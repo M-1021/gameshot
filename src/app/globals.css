@@ -1,10 +1,14 @@
+/* 引入 Tailwind CSS v4 基础样式 */
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+ * 自定义深色模式变体
+ * 使用 class 策略而不是 prefers-color-scheme 媒体查询
+ * 通过在 <html> 上切换 .dark 类来控制
+ */
+@custom-variant dark (&:where(.dark, .dark *));
 
+/* 定义 CSS 自定义属性，用于动态主题切换 */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -12,15 +16,46 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* 浅色模式默认值：暖灰背景 */
+:root {
+  --background: #fafaf5;
+  --foreground: #171717;
+}
+
+/* 深色模式：纯黑背景 */
+.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+/* 文本选中时的主题色高亮 */
+::selection {
+  background-color: rgba(6, 182, 212, 0.3);
+}
+
+.dark ::selection {
+  background-color: rgba(6, 182, 212, 0.4);
+}
+
+html {
+  scroll-behavior: smooth; /* 启用平滑滚动 */
+}
+
+/* 渐变色位移动画，用于英雄区背景 */
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* 浮动动画，用于滚动指示器 */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
 }

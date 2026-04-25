@@ -1,0 +1,38 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Admin {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique
+  passwordHash String
+}
+
+model Game {
+  id          Int         @id @default(autoincrement())
+  slug        String      @unique
+  name        String
+  nameCn      String
+  description String
+  coverImage  String?
+  accentColor String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  screenshots Screenshot[]
+}
+
+model Screenshot {
+  id        Int      @id @default(autoincrement())
+  gameId    Int
+  src       String
+  alt       String
+  width     Int      @default(1920)
+  height    Int      @default(1080)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  game      Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+}
