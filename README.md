@@ -15,20 +15,27 @@
 
 ## 功能特性
 
-### 前台（B 端）
+### 前台
 
 - **响应式布局** — 桌面 3 列 / 平板 2 列 / 移动端 1 列
-- **深色/浅色主题** — 跟随系统偏好，支持手动切换并持久化
-- **滚动动画** — 元素进入视口时淡入升起，首页视差背景
-- **灯箱浏览** — 点击截图展开大图，键盘左右切换，Esc 关闭
-- **静态生成 (SSG)** — 所有页面预渲染，加载极速
+- **深色/浅色主题** — 支持手动切换，偏好持久化
+- **Masonry 瀑布流画廊** — 横竖图自然排布，保持原始宽高比
+- **无限滚动** — 滚动到底部自动加载更多，无割裂体验
+- **灯箱浏览** — 点击截图全屏查看，键盘左右切换，Esc 关闭
+- **模糊占位符** — 图片加载中显示占位预览，无白屏闪烁
+- **衬线字体设计** — Playfair Display 展示字体 + 首页颗粒纹理氛围
+- **ISR 增量再生** — 游戏详情页 1 小时间隔自动更新
 
 ### 管理后台
 
-- **管理员登录** — 单账号密码认证，Session 持久化
-- **游戏管理** — 新建 / 编辑 / 删除游戏分类
-- **截图管理** — 上传 / 删除截图，支持 jpg/png/webp/svg
-- **主题色配置** — 每个游戏可自定义标识颜色
+- **管理员登录** — 单账号密码认证，记住我 + 30 天持久化
+- **修改密码** — 仪表盘内弹窗修改密码
+- **游戏管理** — 新建 / 编辑 / 删除游戏，主题色自动从封面提取
+- **截图管理** — 上传 / 删除 / 预览截图，支持 jpg/png/webp/svg（最大 50MB）
+- **拖拽上传** — 截图区域和封面区域均可拖拽文件上传
+- **批量上传** — 一次选择多张截图，逐个上传并汇总结果
+- **重复检测** — SHA-256 比对自动跳过已存在的图片
+- **主题色配置** — 每个游戏可自定义标识颜色，上传封面后自动取色
 
 ## 页面结构
 
@@ -42,6 +49,49 @@
 /admin/games/[id]       → 编辑游戏 + 管理截图
 ```
 
+## 分享网站给朋友
+
+### 快速分享（serveo — 无需注册、无需公网 IP）
+
+适用于给朋友临时预览网站，一键生成公网链接。
+
+```bash
+# 1. 构建生产版本并启动
+npm run build
+npm start
+
+# 2. 另开一个终端，启动 serveo 隧道
+ssh -R 80:localhost:3000 serveo.net
+# 输出：Forwarding HTTP traffic from https://xxxx.serveousercontent.com
+```
+
+将终端输出的 `https://xxxx.serveousercontent.com` 发给朋友即可。
+
+**自定义域名（可选）：**
+```bash
+ssh -R myname:80:localhost:3000 serveo.net
+# → https://myname.serveo.net
+```
+
+### 长期分享（Cloudflare Tunnel — 免费、CDN 缓存）
+
+适合长期让朋友访问，图片会被 Cloudflare CDN 自动缓存加速。
+
+```bash
+# 安装
+winget install Cloudflare.cloudflared
+
+# 启动临时隧道（一键获取链接）
+cloudflared tunnel --url http://localhost:3000
+# 输出：https://xxxx.trycloudflare.com
+```
+
+### 正式部署（VPS 自托管）
+
+详见下方「部署」章节。
+
+---
+
 ## 项目结构
 
 ```
@@ -49,25 +99,40 @@ gameshot/
 ├── prisma/
 │   ├── schema.prisma        # 数据库模型定义
 │   ├── seed.ts              # 种子脚本（初始化数据）
-│   └── dev.db               # SQLite 数据库文件
+│   └── dev.db               # SQLite 数据库文件（gitignore）
 │
 ├── src/
 │   ├── app/
-│   │   ├── page.tsx         # 首页（服务端组件）
-│   │   ├── games/...        # 前台游戏相关页面
-│   │   ├── admin/...        # 管理后台页面
-│   │   └── api/...          # API 路由
+│   │   ├── layout.tsx       # 根布局（ThemeProvider + Navbar + Footer）
+│   │   ├── page.tsx         # 首页
+│   │   ├── globals.css      # 全局样式
+│   │   ├── sitemap.ts       # 自动生成 sitemap.xml
+│   │   ├── error.tsx        # 全局错误边界
+│   │   ├── loading.tsx      # 全局加载骨架
+│   │   ├── not-found.tsx    # 自定义 404 页面
+│   │   ├── games/           # 前台游戏页面
+│   │   ├── admin/           # 管理后台页面
+│   │   └── api/             # API 路由
 │   │
 │   ├── components/          # UI 组件
 │   ├── lib/
 │   │   ├── auth.ts          # NextAuth 配置
-│   │   ├── prisma.ts        # Prisma 客户端单例
-│   │   └── types.ts         # 类型定义
+│   │   ├── prisma.ts        # Prisma 客户端
+│   │   ├── types.ts         # 类型定义
+│   │   └── utils.ts         # 工具函数
 │   │
-│   └── middleware.ts        # 路由保护中间件
+│   └── proxy.ts             # 路由保护（校验 JWT + auth_session）
 │
-├── public/images/games/     # 游戏图片存放目录
+├── public/
+│   ├── images/
+│   │   ├── games/           # 用户上传截图（gitignore）
+│   │   ├── uploads/         # 用户上传封面（gitignore）
+│   │   └── placeholders/    # 种子占位图
+│   └── robots.txt           # 搜索引擎爬虫规则
+│
 ├── .env                     # 环境变量
+├── opencode.json            # OpenCode 超级能力插件配置
+├── next.config.ts           # Next.js 配置（图片优化等）
 └── prisma.config.ts         # Prisma 配置
 ```
 
@@ -119,14 +184,26 @@ npm run dev
 
 ### 管理截图
 
-在游戏编辑页的「截图管理」区域：
+在游戏编辑页的「截图管理」区域，支持点击-拖拽和拖拽上传两种方式：
 
-- **上传** — 点击「+ 上传截图」选择文件（支持 jpg/png/webp/svg，最大 10MB）
-- **删除** — 将鼠标悬停在截图上，点击右上角的 X 按钮
+- **上传** — 点击「+ 上传截图」选择文件（支持多选），或直接将文件拖入截图区域
+- **预览** — 点击缩略图放大查看
+- **删除** — 悬停在截图上，点击右上角的 X 按钮
+- **重复跳过** — 上传相同图片时自动检测并跳过，结果提示「N 张重复跳过」
+- 支持 jpg/png/webp/svg，最大 50MB
+
+### 上传封面图
+
+在游戏编辑页的「封面图」区域：
+
+- **上传** — 点击「上传封面」或直接拖拽图片到封面区域
+- **自动取色** — 上传封面后自动提取主色调填入主题色
+- **移除** — 点击「移除封面」恢复默认
+- 封面图前台展示在游戏卡片中；无封面时显示主题色 + 首字母占位
 
 ### 修改密码
 
-目前需通过数据库直接修改，后续版本会添加密码修改功能。
+在管理首页右上角点击「修改密码」→ 输入当前密码和新密码 → 确认修改。
 
 ## 数据库命令
 
@@ -137,16 +214,26 @@ npm run db:studio      # 打开 Prisma Studio 可视化数据库
 npm run db:reset       # 重置数据库 + 重新导入数据
 ```
 
-## 部署注意事项
+## 部署
 
-1. 生产环境需设置 `DATABASE_URL` 环境变量和 `AUTH_SECRET`
-2. SQLite 文件数据库不适合多实例部署，如需多实例请切换到 PostgreSQL
-3. 图片上传目录 (`public/images/games/`) 需有写入权限，已加入 `.gitignore` 防止提交到仓库
-4. 游戏详情页使用 ISR（1 小时间隔），修改 API 后通过 `revalidatePath()` 主动刷新
+### 开发环境
 
-### 部署建议
+```bash
+# 启动开发服务器（热更新）
+npm run dev
+# → http://localhost:3000
+```
 
-**推荐方案：VPS 自托管（Nginx + PM2）**
+### 生产构建
+
+```bash
+# 构建 + 启动生产服务器
+npm run build
+npm start
+# → http://localhost:3000 （性能优于 dev 模式，serveo 等隧道必须用此模式）
+```
+
+### 自托管（Nginx + PM2）
 
 ```bash
 # 1. 构建项目
@@ -183,11 +270,18 @@ server {
 ### 环境变量
 
 ```bash
-# .env
+# .env（本地开发，不会提交到 git）
 DATABASE_URL="file:./dev.db"
-AUTH_SECRET="your-random-secret-here"
-SITE_URL="https://your-domain.com"  # 用于 sitemap 生成
+AUTH_SECRET="your-random-secret"          # openssl rand -hex 32 生成
+SITE_URL="http://localhost:3000"          # 用于 sitemap 生成
 ```
+
+### 注意事项
+
+1. SQLite 文件数据库不适合多实例部署，多实例请切换 PostgreSQL
+2. 图片上传目录 (`public/images/games/` 和 `public/images/uploads/`) 已加入 `.gitignore`，不会随代码提交
+3. 首次部署需 `npm run db:push && npm run db:seed` 初始化数据库
+4. 生产环境务必修改默认管理员密码（admin / admin123）
 
 ## 许可
 

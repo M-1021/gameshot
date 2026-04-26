@@ -107,7 +107,7 @@ model Screenshot  { id, gameId (FK->Game), src, alt, width, height, sortOrder }
 - 数据映射为简单对象后传给 Client Component
 - `GameCard` 属性：`{ slug, name, nameCn, accentColor, coverImage?, screenshotCount? }`
 - `GameDetail` 属性：`{ game: Game, prev: {slug,name}?, next: {slug,name}? }`
-- `ScreenshotGrid` 分页加载：默认显示 20 张，点击「加载更多」每次追加 20 张
+- `ScreenshotGrid` 无限滚动：IntersectionObserver 距底部 200px 自动加载，每次追加 20 张
 
 ### Prisma 7 注意
 - Schema 中不可使用 `url` 属性
@@ -123,16 +123,26 @@ model Screenshot  { id, gameId (FK->Game), src, alt, width, height, sortOrder }
 - 种子数据的占位图路径为 `public/images/placeholders/`（git 跟踪）
 
 ### 管理后台截图上传
-- 限制 10MB，支持 jpg/png/webp/svg
+- 限制 50MB，支持 jpg/png/webp/svg
 - 文件名格式：`shot-{timestamp}.{ext}`
 - 保存在 `public/images/games/{slug}/` 目录
-- 上传后 `router.refresh()` 刷新页面数据
+- 支持拖拽上传（截图区域和封面区域均可）
+- 支持批量上传（多选文件逐个上传）
+- SHA-256 查重：自动跳过重复图片，返回 409
+- 上传/删除后自动 `revalidatePath()` 刷新 ISR 缓存
 - 删除时同时删除数据库记录和物理文件
 
 ### 封面图管理
 - 上传到 `/api/upload`，返回 `{ src }` 路径
 - 通过 `PUT /api/games/[id]` 将 `coverImage` 写入数据库
 - 前台 `GameCard` 有封面图则显示图片，否则显示主题色首字母占位
+- 上传封面后自动用 Canvas 10×10 采样提取主色调 → 填入 `accentColor`
+
+### 外部分享
+- serveo（免费、零配置）：`ssh -R 80:localhost:3000 serveo.net`
+- Cloudflare Tunnel（免费、CDN 缓存）：`cloudflared tunnel --url http://localhost:3000`
+- 生产模式 `npm start` 启动（非 `npm run dev`，dev 有 WebSocket 依赖不适合隧道）
+- 认证需 `trustHost: true`（已配置在 `auth.ts`）
 
 ## 常用命令
 
