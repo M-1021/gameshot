@@ -3,6 +3,7 @@
  * DELETE - 删除截图（同时删除图片文件）
  */
 import { NextResponse } from "next/server"
+import { revalidatePath } from "next/cache"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { unlink } from "fs/promises"
@@ -22,11 +23,14 @@ export async function DELETE(request: Request, { params }: Params) {
 
   const screenshot = await prisma.screenshot.findUnique({
     where: { id: Number(id) },
+    include: { game: { select: { slug: true } } },
   })
 
   if (!screenshot) {
     return NextResponse.json({ error: "Not found" }, { status: 404 })
   }
+
+  const gameSlug = screenshot.game.slug
 
   // 删除图片文件
   const filePath = path.join(process.cwd(), "public", screenshot.src)
@@ -38,6 +42,9 @@ export async function DELETE(request: Request, { params }: Params) {
 
   // 删除数据库记录
   await prisma.screenshot.delete({ where: { id: Number(id) } })
+
+  revalidatePath(`/games/${gameSlug}`)
+  revalidatePath("/games")
 
   return NextResponse.json({ success: true })
 }

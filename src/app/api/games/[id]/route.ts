@@ -5,6 +5,7 @@
  * DELETE - 删除游戏（级联删除截图和图片文件）
  */
 import { NextResponse } from "next/server"
+import { revalidatePath } from "next/cache"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 
@@ -47,6 +48,10 @@ export async function PUT(request: Request, { params }: Params) {
     },
   })
 
+  revalidatePath(`/games/${game.slug}`)
+  revalidatePath("/games")
+  revalidatePath("/", "layout")
+
   return NextResponse.json(game)
 }
 
@@ -81,6 +86,9 @@ export async function DELETE(request: Request, { params }: Params) {
 
   // 删除数据库记录（级联删除截图）
   await prisma.game.delete({ where: { id: Number(id) } })
+
+  revalidatePath("/games")
+  revalidatePath("/", "layout")
 
   return NextResponse.json({ success: true })
 }

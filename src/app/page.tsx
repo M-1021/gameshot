@@ -63,7 +63,7 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="border-t border-zinc-200 px-6 py-24 dark:border-zinc-800">
+      <section id="about" className="border-t border-zinc-200 px-6 py-24 dark:border-zinc-800">
         <div className="mx-auto max-w-7xl">
           <ScrollReveal>
             <div className="mx-auto max-w-2xl text-center">
@@ -74,7 +74,7 @@ export default async function Home() {
                 关于 GameShot
               </h2>
               <p className="mt-6 leading-relaxed text-zinc-500 dark:text-zinc-400">
-                这是一个个人游戏摄影作品集。我热衷于在虚拟世界中寻找美的瞬间，
+                这是一个游戏摄影收藏集。我热衷于在虚拟世界中寻找美的瞬间，
                 用截图记录那些令人惊叹的画面。每一张作品都是对游戏艺术的一次致敬。
               </p>
             </div>

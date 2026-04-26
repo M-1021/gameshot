@@ -139,9 +139,55 @@ npm run db:reset       # 重置数据库 + 重新导入数据
 
 ## 部署注意事项
 
-1. 生产环境需设置 `DATABASE_URL` 环境变量
+1. 生产环境需设置 `DATABASE_URL` 环境变量和 `AUTH_SECRET`
 2. SQLite 文件数据库不适合多实例部署，如需多实例请切换到 PostgreSQL
-3. 图片上传目录 (`public/images/games/`) 需有写入权限
+3. 图片上传目录 (`public/images/games/`) 需有写入权限，已加入 `.gitignore` 防止提交到仓库
+4. 游戏详情页使用 ISR（1 小时间隔），修改 API 后通过 `revalidatePath()` 主动刷新
+
+### 部署建议
+
+**推荐方案：VPS 自托管（Nginx + PM2）**
+
+```bash
+# 1. 构建项目
+npm run build
+
+# 2. 使用 PM2 启动
+pm2 start npm --name gameshot -- start
+pm2 save
+
+# 3. Nginx 反向代理 + 静态文件直连
+```
+
+**Nginx 配置示例：**
+```nginx
+server {
+    listen 443 ssl;
+    server_name your-domain.com;
+
+    # 静态图片绕过 Node.js，直接 Nginx 返回
+    location /images/ {
+        alias /path/to/gameshot/public/images/;
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+    }
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+}
+```
+
+### 环境变量
+
+```bash
+# .env
+DATABASE_URL="file:./dev.db"
+AUTH_SECRET="your-random-secret-here"
+SITE_URL="https://your-domain.com"  # 用于 sitemap 生成
+```
 
 ## 许可
 

@@ -24,8 +24,8 @@ export default function NewGamePage() {
     setLoading(true)
     setError("")
 
-    if (!form.name.trim() || !form.nameCn.trim()) {
-      setError("游戏名称和中文名不能为空")
+    if (!form.name.trim() && !form.nameCn.trim()) {
+      setError("请至少填写游戏名称（英文或中文）")
       setLoading(false)
       return
     }
@@ -98,8 +98,7 @@ export default function NewGamePage() {
               value={form.nameCn}
               onChange={(e) => setForm({ ...form, nameCn: e.target.value })}
               className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-sm outline-none transition-colors focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
-              placeholder="如 赛博朋克 2077"
-              required
+              placeholder="如 赛博朋克 2077（选填）"
             />
           </div>
 

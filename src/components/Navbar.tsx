@@ -21,11 +21,11 @@ export default function Navbar() {
 
   return (
     <header className="fixed top-0 right-0 left-0 z-50 px-4 py-4">
-      <nav className="mx-auto flex max-w-7xl items-center justify-between rounded-2xl border border-zinc-200/60 bg-white/70 px-6 py-3 backdrop-blur-xl dark:border-zinc-800/60 dark:bg-black/70">
+      <nav className="mx-auto flex max-w-7xl items-center justify-between rounded-3xl border border-zinc-200/40 bg-white/60 px-6 py-2.5 backdrop-blur-xl dark:border-zinc-800/40 dark:bg-black/60">
         {/* Logo：渐变色 GameShot 文字 */}
         <Link
           href="/"
-          className="text-lg font-bold tracking-tight"
+          className="font-serif text-lg font-bold tracking-tight"
         >
           <span className="bg-linear-to-r from-cyan-500 to-purple-500 bg-clip-text text-transparent">
             GameShot

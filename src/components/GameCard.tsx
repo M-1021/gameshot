@@ -22,6 +22,8 @@ interface GameCardProps {
  * 有封面图时显示图片，否则显示主题色占位
  */
 export default function GameCard({ game, index }: GameCardProps) {
+  const isPriority = index < 3
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 40 }}
@@ -40,7 +42,13 @@ export default function GameCard({ game, index }: GameCardProps) {
               alt={game.name}
               width={400}
               height={300}
-              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              priority={isPriority}
+              fetchPriority={isPriority ? "high" : "auto"}
+              loading={isPriority ? undefined : "lazy"}
+              placeholder="blur"
+              blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iMzAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iI2U0ZTRlNCIvPjwvc3ZnPg=="
+              className="h-full w-full object-cover transition-all duration-500 group-hover:scale-105"
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-zinc-200 dark:bg-zinc-800">
@@ -64,8 +72,8 @@ export default function GameCard({ game, index }: GameCardProps) {
         <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
 
         <div className="absolute bottom-0 left-0 right-0 translate-y-4 p-6 opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100">
-          <h3 className="text-xl font-bold text-white">{game.name}</h3>
-          <p className="mt-1 text-sm text-zinc-300">{game.nameCn}</p>
+          <h3 className="text-xl font-bold text-white">{game.nameCn || game.name}</h3>
+          {game.nameCn && <p className="mt-1 text-sm text-zinc-300">{game.name}</p>}
         </div>
 
         <div

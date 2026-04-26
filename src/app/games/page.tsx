@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { prisma } from "@/lib/prisma"
 import GameCard from "@/components/GameCard"
 import ScrollReveal from "@/components/ScrollReveal"
@@ -12,11 +13,20 @@ export default async function GamesPage() {
     <div className="px-6 pt-32 pb-24">
       <div className="mx-auto max-w-7xl">
         <ScrollReveal>
+          <Link
+            href="/"
+            className="mb-6 inline-flex items-center gap-1 text-sm text-zinc-500 transition-colors hover:text-zinc-800 dark:hover:text-zinc-200"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+            返回首页
+          </Link>
           <div className="mb-14">
             <span className="mb-3 inline-block text-xs font-semibold uppercase tracking-[0.2em] text-cyan-500">
               Games
             </span>
-            <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
+            <h1 className="font-serif text-4xl font-bold tracking-tight sm:text-5xl">
               游戏作品集
             </h1>
             <p className="mt-3 max-w-lg text-zinc-500 dark:text-zinc-400">

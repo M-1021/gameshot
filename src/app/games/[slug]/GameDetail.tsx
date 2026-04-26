@@ -22,6 +22,7 @@ export default function GameDetail({ game, prev, next }: GameDetailProps) {
         <div className="mb-14">
           <Link
             href="/games"
+            prefetch
             className="mb-6 inline-flex items-center gap-1 text-sm text-zinc-500 transition-colors hover:text-zinc-800 dark:hover:text-zinc-200"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -36,14 +37,17 @@ export default function GameDetail({ game, prev, next }: GameDetailProps) {
                 className="h-3 w-3 rounded-full"
                 style={{ backgroundColor: game.accentColor }}
               />
-              <span className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-500">
+              <span
+                className="text-xs font-semibold uppercase tracking-[0.2em]"
+                style={{ color: game.accentColor }}
+              >
                 {game.screenshots.length} Screenshots
               </span>
             </div>
-            <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-              {game.name}
+            <h1 className="font-serif text-4xl font-bold tracking-tight sm:text-5xl">
+              {game.nameCn || game.name}
             </h1>
-            <p className="text-xl text-zinc-400">{game.nameCn}</p>
+            {game.nameCn && <p className="text-xl text-zinc-400">{game.name}</p>}
             <p className="mt-4 max-w-2xl leading-relaxed text-zinc-500 dark:text-zinc-400">
               {game.description}
             </p>
@@ -57,6 +61,7 @@ export default function GameDetail({ game, prev, next }: GameDetailProps) {
         {prev ? (
           <Link
             href={`/games/${prev.slug}`}
+            prefetch
             className="group flex flex-col items-start gap-1 transition-colors hover:text-cyan-500"
           >
             <span className="text-xs text-zinc-500">Previous</span>
@@ -69,6 +74,7 @@ export default function GameDetail({ game, prev, next }: GameDetailProps) {
         {next ? (
           <Link
             href={`/games/${next.slug}`}
+            prefetch
             className="group flex flex-col items-end gap-1 transition-colors hover:text-cyan-500"
           >
             <span className="text-xs text-zinc-500">Next</span>

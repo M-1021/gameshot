@@ -45,6 +45,12 @@ export default function EditGameForm({ game }: Props) {
   const [coverUploading, setCoverUploading] = useState(false)
   const [deletingId, setDeletingId] = useState<number | null>(null)
   const [message, setMessage] = useState("")
+  const [dragOver, setDragOver] = useState(false)
+  const [dragOverCover, setDragOverCover] = useState(false)
+  const [previewSrc, setPreviewSrc] = useState<string | null>(null)
+
+  const dragCounterRef = useRef(0)
+  const coverDragCounterRef = useRef(0)
 
   async function handleSave(e: FormEvent) {
     e.preventDefault()
@@ -66,25 +72,44 @@ export default function EditGameForm({ game }: Props) {
     setSaving(false)
   }
 
-  async function handleUpload(file: File) {
+  async function handleUploads(files: FileList) {
     setUploading(true)
     setMessage("")
+    let successCount = 0
+    let failCount = 0
+    let dupCount = 0
 
-    const formData = new FormData()
-    formData.append("file", file)
-    formData.append("alt", file.name.replace(/\.[^/.]+$/, ""))
+    for (const file of Array.from(files)) {
+      const formData = new FormData()
+      formData.append("file", file)
+      formData.append("alt", file.name.replace(/\.[^/.]+$/, ""))
 
-    const res = await fetch(`/api/games/${game.id}/screenshots`, {
-      method: "POST",
-      body: formData,
-    })
+      const res = await fetch(`/api/games/${game.id}/screenshots`, {
+        method: "POST",
+        body: formData,
+      })
 
-    if (res.ok) {
-      setMessage("上传成功")
+      if (res.ok) {
+        successCount++
+      } else if (res.status === 409) {
+        dupCount++
+      } else {
+        failCount++
+      }
+    }
+
+    const parts: string[] = []
+    if (successCount > 0) parts.push(`${successCount} 张成功`)
+    if (dupCount > 0) parts.push(`${dupCount} 张重复跳过`)
+    if (failCount > 0) parts.push(`${failCount} 张失败`)
+
+    if (successCount > 0) {
+      setMessage(`上传完成：${parts.join("，")}`)
       router.refresh()
+    } else if (dupCount > 0) {
+      setMessage(`全部 ${dupCount} 张已存在，无需重复上传`)
     } else {
-      const data = await res.json()
-      setMessage(data.error || "上传失败")
+      setMessage("上传失败")
     }
     setUploading(false)
     if (fileInputRef.current) fileInputRef.current.value = ""
@@ -126,6 +151,11 @@ export default function EditGameForm({ game }: Props) {
 
     const { src } = await res.json()
 
+    // 从封面提取主色调并自动设置为主题色
+    extractDominantColor(file).then((color) => {
+      setForm((f) => ({ ...f, accentColor: color }))
+    })
+
     // 保存封面图路径到游戏记录
     const saveRes = await fetch(`/api/games/${game.id}`, {
       method: "PUT",
@@ -160,6 +190,80 @@ export default function EditGameForm({ game }: Props) {
     }
   }
 
+  function extractDominantColor(file: File): Promise<string> {
+    return new Promise((resolve) => {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const img = new window.Image()
+        img.onload = () => {
+          const canvas = document.createElement("canvas")
+          canvas.width = 10
+          canvas.height = 10
+          const ctx = canvas.getContext("2d")!
+          ctx.drawImage(img, 0, 0, 10, 10)
+          const data = ctx.getImageData(0, 0, 10, 10).data
+          const colorMap: Record<string, number> = {}
+          for (let i = 0; i < data.length; i += 4) {
+            const hex = "#" + [data[i], data[i + 1], data[i + 2]]
+              .map((c) => c.toString(16).padStart(2, "0"))
+              .join("")
+            colorMap[hex] = (colorMap[hex] || 0) + 1
+          }
+          let dominant = "#06b6d4"
+          let maxCount = 0
+          for (const [hex, count] of Object.entries(colorMap)) {
+            if (count > maxCount) { dominant = hex; maxCount = count }
+          }
+          resolve(dominant)
+        }
+        img.src = e.target?.result as string
+      }
+      reader.readAsDataURL(file)
+    })
+  }
+
+  function handleDragEnter() {
+    dragCounterRef.current++
+    setDragOver(true)
+  }
+
+  function handleDragLeave() {
+    dragCounterRef.current--
+    if (dragCounterRef.current <= 0) {
+      dragCounterRef.current = 0
+      setDragOver(false)
+    }
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault()
+    setDragOver(false)
+    dragCounterRef.current = 0
+    const files = e.dataTransfer.files
+    if (files.length > 0) handleUploads(files)
+  }
+
+  function handleCoverDragEnter() {
+    coverDragCounterRef.current++
+    setDragOverCover(true)
+  }
+
+  function handleCoverDragLeave() {
+    coverDragCounterRef.current--
+    if (coverDragCounterRef.current <= 0) {
+      coverDragCounterRef.current = 0
+      setDragOverCover(false)
+    }
+  }
+
+  function handleCoverDrop(e: React.DragEvent) {
+    e.preventDefault()
+    setDragOverCover(false)
+    coverDragCounterRef.current = 0
+    const file = e.dataTransfer.files[0]
+    if (file) handleCoverUpload(file)
+  }
+
   return (
     <div>
       <Link
@@ -188,7 +292,17 @@ export default function EditGameForm({ game }: Props) {
       )}
 
       {/* 封面图管理 */}
-      <div className="mb-12 rounded-2xl border border-zinc-200 bg-white p-8 dark:border-zinc-800 dark:bg-zinc-900">
+      <div
+        className={`mb-12 rounded-2xl border p-8 transition-colors ${
+          dragOverCover
+            ? "border-cyan-400 bg-cyan-50/30 dark:border-cyan-500 dark:bg-cyan-950/20"
+            : "border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900"
+        }`}
+        onDragEnter={handleCoverDragEnter}
+        onDragLeave={handleCoverDragLeave}
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={handleCoverDrop}
+      >
         <h2 className="mb-4 text-lg font-semibold">封面图</h2>
 
         <div className="flex items-start gap-6">
@@ -313,20 +427,36 @@ export default function EditGameForm({ game }: Props) {
       </form>
 
       {/* 截图管理 */}
-      <div className="rounded-2xl border border-zinc-200 bg-white p-8 dark:border-zinc-800 dark:bg-zinc-900">
+      <div
+        className={`rounded-2xl border bg-white p-8 transition-colors dark:bg-zinc-900 ${
+          dragOver
+            ? "border-cyan-400 bg-cyan-50/30 dark:border-cyan-500 dark:bg-cyan-950/20"
+            : "border-zinc-200 dark:border-zinc-800"
+        }`}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={handleDrop}
+      >
         <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">
-            截图管理（{game.screenshots.length} 张）
-          </h2>
+          <div>
+            <h2 className="text-lg font-semibold">
+              截图管理（{game.screenshots.length} 张）
+            </h2>
+            <p className="mt-1 text-xs text-zinc-400">
+              点击缩略图可预览，拖拽文件到此处即可上传
+            </p>
+          </div>
           <div>
             <input
               ref={fileInputRef}
               type="file"
               accept="image/jpeg,image/png,image/webp,image/svg+xml"
+              multiple
               className="hidden"
               onChange={(e) => {
-                const file = e.target.files?.[0]
-                if (file) handleUpload(file)
+                const files = e.target.files
+                if (files && files.length > 0) handleUploads(files)
               }}
             />
             <button
@@ -347,15 +477,20 @@ export default function EditGameForm({ game }: Props) {
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             {game.screenshots.map((shot) => (
               <div key={shot.id} className="group relative">
-                <div className="aspect-[4/3] overflow-hidden rounded-xl bg-zinc-100 dark:bg-zinc-800">
-                  <Image
-                    src={shot.src}
-                    alt={shot.alt}
-                    width={shot.width}
-                    height={shot.height}
-                    className="h-full w-full object-cover"
-                  />
-                </div>
+                <button
+                  onClick={() => setPreviewSrc(shot.src)}
+                  className="block w-full"
+                >
+                  <div className="flex items-center justify-center overflow-hidden rounded-xl bg-zinc-100 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700" style={{ height: 140 }}>
+                    <Image
+                      src={shot.src}
+                      alt={shot.alt}
+                      width={shot.width}
+                      height={shot.height}
+                      className="h-full w-full object-contain"
+                    />
+                  </div>
+                </button>
                 <p className="mt-1 truncate text-xs text-zinc-400">{shot.alt}</p>
                 <button
                   onClick={() => handleDeleteScreenshot(shot.id)}
@@ -371,6 +506,30 @@ export default function EditGameForm({ game }: Props) {
           </div>
         )}
       </div>
+
+      {previewSrc && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-8 backdrop-blur-sm"
+          onClick={() => setPreviewSrc(null)}
+        >
+          <button
+            onClick={() => setPreviewSrc(null)}
+            className="absolute top-6 right-6 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+          <Image
+            src={previewSrc}
+            alt="预览"
+            width={1920}
+            height={1080}
+            className="max-h-[90vh] max-w-[90vw] rounded-xl object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   )
 }

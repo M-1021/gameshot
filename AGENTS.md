@@ -68,7 +68,7 @@ model Screenshot  { id, gameId (FK->Game), src, alt, width, height, sortOrder }
 |---|---|---|
 | `/` | SSR → 静态 | 首页 |
 | `/games` | SSR → 静态 | 游戏列表 |
-| `/games/[slug]` | SSG | 游戏详情 + 截图画廊 |
+| `/games/[slug]` | ISR (1h) | 游戏详情 + 截图画廊（分页加载，每页 20 张） |
 | `/admin/login` | 静态 | 管理员登录（记住我支持） |
 | `/admin` | SSR | 管理仪表盘（游戏列表） |
 | `/admin/games/new` | 静态 | 新建游戏 |
@@ -107,11 +107,20 @@ model Screenshot  { id, gameId (FK->Game), src, alt, width, height, sortOrder }
 - 数据映射为简单对象后传给 Client Component
 - `GameCard` 属性：`{ slug, name, nameCn, accentColor, coverImage?, screenshotCount? }`
 - `GameDetail` 属性：`{ game: Game, prev: {slug,name}?, next: {slug,name}? }`
+- `ScreenshotGrid` 分页加载：默认显示 20 张，点击「加载更多」每次追加 20 张
 
 ### Prisma 7 注意
 - Schema 中不可使用 `url` 属性
 - Client 初始化需传入 `@prisma/adapter-libsql` 适配器
 - `datasourceUrl` 属性不存在，使用 `adapter` 选项代替
+
+### ISR 与缓存更新
+- `/games/[slug]` 页面使用 ISR（`revalidate = 3600`，1 小时后再验证）
+- API 中创建/更新/删除游戏后调用 `revalidatePath()` 主动刷新静态页面
+
+### 图片存储与 gitignore
+- 用户上传的截图和封面图存于 `public/images/games/`，此目录已加入 `.gitignore`
+- 种子数据的占位图路径为 `public/images/placeholders/`（git 跟踪）
 
 ### 管理后台截图上传
 - 限制 10MB，支持 jpg/png/webp/svg
@@ -139,5 +148,5 @@ npm run db:reset     # 重置数据库 + 重新 seed
 
 ## 当前已知问题
 
-- 登录页 URL 带 `?clear=1` 时调用 `signOut` 清除残留 JWT（Edge case，不影响正常流程）
-- 上传的封面图路径存储在 `Game.coverImage`，删除游戏时不会自动删除封面文件（手动清理）
+- 种子占位图路径在 `public/images/placeholders/` 下，但实际占位 SVG 文件未提交到仓库（`public/images/games/` 已在 gitignore 排除）
+- 删除游戏时不会自动删除封面文件（手动清理）

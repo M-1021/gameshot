@@ -111,6 +111,7 @@ export default function Lightbox({ screenshots, currentIndex, onClose, onNavigat
             alt={current.alt}
             width={current.width}
             height={current.height}
+            sizes="(max-width: 1200px) 100vw, 80vw"
             className="max-h-[85vh] w-auto rounded-lg object-contain"
             priority
           />

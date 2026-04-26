@@ -5,6 +5,95 @@ import { useRouter } from "next/navigation"
 import { signOut } from "next-auth/react"
 import Link from "next/link"
 
+function ChangePasswordModal({ onClose }: { onClose: () => void }) {
+  const [currentPassword, setCurrentPassword] = useState("")
+  const [newPassword, setNewPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [error, setError] = useState("")
+  const [success, setSuccess] = useState(false)
+  const [loading, setLoading] = useState(false)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError("")
+    setLoading(true)
+
+    if (newPassword !== confirmPassword) {
+      setError("两次密码输入不一致")
+      setLoading(false)
+      return
+    }
+
+    if (newPassword.length < 6) {
+      setError("新密码至少 6 个字符")
+      setLoading(false)
+      return
+    }
+
+    const res = await fetch("/api/admin/password", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ currentPassword, newPassword }),
+    })
+
+    if (res.ok) {
+      setSuccess(true)
+    } else {
+      const data = await res.json()
+      setError(data.error || "修改失败")
+    }
+    setLoading(false)
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-6">
+      <div className="w-full max-w-sm rounded-2xl border border-zinc-200 bg-white p-8 dark:border-zinc-800 dark:bg-zinc-900">
+        <h2 className="mb-6 text-xl font-bold tracking-tight">修改密码</h2>
+        {success ? (
+          <div>
+            <p className="mb-4 text-sm text-green-600 dark:text-green-400">密码修改成功</p>
+            <button onClick={onClose}
+              className="w-full rounded-xl bg-cyan-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-cyan-600"
+            >关闭</button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">{error}</div>
+            )}
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">当前密码</label>
+              <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)}
+                className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-sm outline-none transition-colors focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
+                required />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">新密码</label>
+              <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-sm outline-none transition-colors focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
+                required />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">确认新密码</label>
+              <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-sm outline-none transition-colors focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
+                required />
+            </div>
+            <div className="flex gap-3">
+              <button type="button" onClick={onClose}
+                className="flex-1 rounded-xl border border-zinc-300 px-4 py-2.5 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
+              >取消</button>
+              <button type="submit" disabled={loading}
+                className="flex-1 rounded-xl bg-cyan-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-cyan-600 disabled:opacity-50"
+              >{loading ? "修改中..." : "确认修改"}</button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  )
+}
+
 interface GameItem {
   id: number
   slug: string
@@ -26,6 +115,7 @@ interface Props {
 export default function AdminDashboard({ games }: Props) {
   const router = useRouter()
   const [deleting, setDeleting] = useState<number | null>(null)
+  const [showPasswordModal, setShowPasswordModal] = useState(false)
 
   async function handleDelete(id: number, name: string) {
     if (!confirm(`确定要删除「${name}」吗？所有截图将被永久删除。`)) return
@@ -63,6 +153,12 @@ export default function AdminDashboard({ games }: Props) {
               返回前台
             </Link>
             <button
+              onClick={() => setShowPasswordModal(true)}
+              className="rounded-lg px-3 py-1.5 text-xs text-zinc-500 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            >
+              修改密码
+            </button>
+            <button
               onClick={handleLogout}
               className="rounded-lg px-3 py-1.5 text-xs text-zinc-500 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
             >
@@ -94,9 +190,9 @@ export default function AdminDashboard({ games }: Props) {
                     style={{ backgroundColor: game.accentColor }}
                   />
                   <div>
-                    <h3 className="font-semibold">{game.name}</h3>
+                    <h3 className="font-semibold">{game.nameCn || game.name}</h3>
                     <p className="text-sm text-zinc-400">
-                      {game.nameCn} &middot; {game._count.screenshots} 张截图
+                      {(game.nameCn ? game.name : game.nameCn) || game.name} &middot; {game._count.screenshots} 张截图
                     </p>
                   </div>
                 </div>
@@ -127,6 +223,8 @@ export default function AdminDashboard({ games }: Props) {
           </div>
         )}
       </div>
+
+      {showPasswordModal && <ChangePasswordModal onClose={() => setShowPasswordModal(false)} />}
     </div>
   )
 }

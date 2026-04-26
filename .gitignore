@@ -49,3 +49,4 @@ prisma/dev.db
 
 # uploaded images (user-specific)
 public/images/uploads/
+public/images/games/

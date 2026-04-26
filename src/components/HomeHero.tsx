@@ -41,7 +41,32 @@ export default function HomeHero() {
       >
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(6,182,212,0.15),transparent_50%)] dark:bg-[radial-gradient(ellipse_at_top_right,_rgba(6,182,212,0.1),transparent_50%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_rgba(139,92,246,0.15),transparent_50%)] dark:bg-[radial-gradient(ellipse_at_bottom_left,_rgba(139,92,246,0.1),transparent_50%)]" />
+        {/* SVG 噪声纹理 */}
+        <svg className="absolute inset-0 h-full w-full opacity-[0.03] dark:opacity-[0.04]" xmlns="http://www.w3.org/2000/svg">
+          <filter id="noise">
+            <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch" />
+            <feColorMatrix type="saturate" values="0" />
+          </filter>
+          <rect width="100%" height="100%" filter="url(#noise)" />
+        </svg>
       </div>
+
+      {/* 浮动光点 */}
+      <motion.div
+        animate={{ y: [-20, 20, -20], x: [-10, 10, -10] }}
+        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute top-1/4 left-1/4 h-64 w-64 rounded-full bg-cyan-500/5 blur-3xl"
+      />
+      <motion.div
+        animate={{ y: [20, -30, 20], x: [15, -15, 15] }}
+        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute top-1/3 right-1/4 h-48 w-48 rounded-full bg-purple-500/5 blur-3xl"
+      />
+      <motion.div
+        animate={{ y: [-10, 25, -10], x: [-5, 20, -5] }}
+        transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute bottom-1/3 left-1/3 h-40 w-40 rounded-full bg-cyan-400/5 blur-3xl"
+      />
 
       {/* 前景内容 */}
       <div className="relative z-10 mx-auto max-w-4xl px-6 text-center">
@@ -59,7 +84,7 @@ export default function HomeHero() {
 
         {/* 主标题：渐变色 "光影捕手" */}
         <ScrollReveal delay={0.15}>
-          <h1 className="text-5xl font-bold leading-tight tracking-tight sm:text-6xl md:text-7xl">
+          <h1 className="font-serif text-5xl font-bold leading-tight tracking-tight sm:text-6xl md:text-7xl">
             虚拟世界的
             <br />
             <span className="bg-linear-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">

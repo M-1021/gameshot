@@ -7,8 +7,11 @@ interface Props {
 }
 
 /**
- * 静态生成参数 - 构建时预渲染所有游戏页面
+ * ISR: 1 小时后再验证，新游戏/修改后页面自动更新
  */
+export const revalidate = 3600
+export const dynamicParams = true
+
 export async function generateStaticParams() {
   const games = await prisma.game.findMany({
     select: { slug: true },
